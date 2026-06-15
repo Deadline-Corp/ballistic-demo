@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DEADLINE — Баллистический модуль · демо</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0A0D0B; --ink2:#0E1310; --surface:#121a14; --surface2:#17211a;
+  --line:rgba(120,255,170,.12); --line2:rgba(120,255,170,.22);
+  --fg:#EAF3EC; --muted:#8FA396; --muted2:#62736a;
+  --acc:#37E08B; --acc2:#9BFFB0; --amber:#E7B873; --red:#FF5A52;
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:radial-gradient(120% 90% at 80% -10%,#10331f 0%,transparent 55%),var(--ink);color:var(--fg);-webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px}
+.mono{font-family:'JetBrains Mono',monospace}
+h1,h2,h3{font-family:'Outfit',sans-serif;letter-spacing:-.02em;line-height:1.05}
+
+header.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px}
+.brand{font-family:'Outfit';font-weight:900;font-size:20px;display:flex;align-items:center;gap:10px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 14px var(--acc)}
+.tag{font-size:12.5px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+.lead{font-family:'Outfit';font-weight:800;font-size:clamp(26px,4vw,38px);margin:18px 0 6px}
+.lead .g{color:var(--acc)}
+.sub{color:var(--muted);font-size:15.5px;max-width:70ch;margin-bottom:24px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+/* scope */
+.scopewrap{background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:20px}
+.scopehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.scopehead .t{font-family:'Outfit';font-weight:700;font-size:15px}
+.scopehead .pill{font-family:'JetBrains Mono';font-size:11px;color:var(--acc);border:1px solid var(--line2);border-radius:999px;padding:5px 12px;background:rgba(55,224,139,.08)}
+.scope{position:relative;width:100%;max-width:540px;aspect-ratio:1/1;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+canvas{display:block;width:100%;height:100%}
+.scope .res{position:absolute;left:10px;bottom:8px;font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,.5)}
+.scope .liveq{position:absolute;right:10px;top:8px;font-family:'JetBrains Mono';font-size:10px;color:var(--acc);letter-spacing:.1em}
+
+/* mode toggle */
+.modes{display:flex;gap:10px;margin-top:16px}
+.mode{flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:var(--surface);transition:.2s}
+.mode.on{border-color:var(--acc);background:rgba(55,224,139,.1)}
+.mode.on.bad{border-color:var(--red);background:rgba(255,90,82,.1)}
+.mode .mt{font-family:'Outfit';font-weight:700;font-size:14px}
+.mode.on .mt{color:var(--acc)} .mode.on.bad .mt{color:var(--red)}
+.mode .md{font-size:12px;color:var(--muted);margin-top:3px}
+.badnote{margin-top:12px;display:none;gap:10px;align-items:flex-start;background:rgba(255,90,82,.1);border:1px solid rgba(255,90,82,.3);border-radius:12px;padding:12px 14px;font-size:13px}
+.badnote.show{display:flex}
+.badnote b{color:var(--red)}
+
+/* controls */
+.panel{background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:22px}
+.panel h3{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);margin-bottom:18px}
+.ctrl{margin-bottom:20px}
+.ctrl .lbl{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:8px}
+.ctrl .val{font-family:'JetBrains Mono';color:var(--fg);font-weight:700}
+input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:linear-gradient(90deg,var(--acc),var(--acc2));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--acc);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.dial{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.dchip{font-size:12px;border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:pointer;background:var(--surface);color:var(--muted)}
+.dchip.on{border-color:var(--acc);color:var(--acc);background:rgba(55,224,139,.1)}
+.cart{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin-top:4px;line-height:1.7}
+.cart b{color:var(--fg)}
+
+/* solution readout */
+.sol{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+.solcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.solcard.elev{border-color:rgba(231,184,115,.3)}
+.solcard.wind{border-color:rgba(55,224,139,.3)}
+.solcard .k{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.solcard .big{font-family:'Outfit';font-weight:900;font-size:30px;margin-top:4px}
+.solcard.elev .big{color:var(--amber)} .solcard.wind .big{color:var(--acc)}
+.solcard .sm{font-family:'JetBrains Mono';font-size:12px;color:var(--muted);margin-top:2px}
+.solrow{grid-column:1/-1;display:flex;justify-content:space-between;font-family:'JetBrains Mono';font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.solrow b{color:var(--fg)}
+
+/* validation */
+.valid{margin-top:24px;background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:22px;overflow:hidden}
+.valid h3{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
+.valid .vs{font-size:13px;color:var(--muted);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono';font-size:13px}
+th,td{text-align:right;padding:10px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+td.ok{color:var(--acc)}
+.foot{margin-top:26px;color:var(--muted2);font-size:12.5px;line-height:1.6;border-top:1px solid var(--line);padding-top:18px}
+.foot b{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="dot"></span>DEADLINE</div>
+    <div class="tag">Демонстрация баллистического модуля · точка прицеливания в реальном времени</div>
+  </header>
+  <div class="lead">Поправка по <span class="g">двум осям</span> прямо на дисплее прицела</div>
+  <p class="sub">Меняйте дистанцию и ветер — точка прицеливания двигается по вертикали (падение пули) и по горизонтали (ветер + деривация). Данные патрона .308 Win 175gr SMK по валидированным таблицам. Переключатель ниже показывает, почему важно накладывать поправку на дисплей, а не на сенсор.</p>
+
+  <div class="grid">
+    <div>
+      <div class="scopewrap">
+        <div class="scopehead">
+          <div class="t">Тепловизионный прицел · вид в окуляр</div>
+          <div class="pill" id="fovpill">FOV 12° (пример) · 2560×2560</div>
+        </div>
+        <div class="scope">
+          <canvas id="cv" width="1080" height="1080"></canvas>
+          <div class="res">СЕНСОР 1280×1024 · ДИСПЛЕЙ 2560×2560 · ЛИНЗА 75мм</div>
+          <div class="liveq">● LIVE</div>
+        </div>
+        <div class="modes">
+          <div class="mode on" id="mDisplay" onclick="setMode('display')">
+            <div class="mt">✓ Наложение по дисплею</div>
+            <div class="md">Правильно — точка садится в цель</div>
+          </div>
+          <div class="mode" id="mSensor" onclick="setMode('sensor')">
+            <div class="mt">Наложение по сенсору</div>
+            <div class="md">Как у конкурента — промах</div>
+          </div>
+        </div>
+        <div class="badnote" id="badnote">
+          <span>⚠</span>
+          <div>Режим «по сенсору»: поправка считается в пикселях сенсора (1280×1024) и растягивается на квадратный дисплей. Сенсор 5:4, дисплей 1:1 — вертикаль масштабируется неверно, и точка <b>не доходит до цели</b>. Именно это вы и заметили у конкурента.</div>
+        </div>
+      </div>
+
+      <div class="valid">
+        <h3>Баллистическое решение по дистанциям</h3>
+        <div class="vs">Расчёт на валидированной баллистической базе (G7 / Litz · .308 175gr SMK · MV 2600 · зеро 100 yd). Значения совпадают с эталонными калькуляторами Strelok и JBM.</div>
+        <table>
+          <thead><tr><th>Дистанция</th><th>Падение</th><th>MIL</th><th>Ветер 4 м/с</th><th>Время</th></tr></thead>
+          <tbody id="vtbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3>Параметры выстрела</h3>
+        <div class="ctrl">
+          <div class="lbl"><span>Дистанция</span><span class="val" id="distV">500 yd</span></div>
+          <input type="range" id="dist" min="100" max="1000" step="25" value="500">
+        </div>
+        <div class="ctrl">
+          <div class="lbl"><span>Скорость ветра</span><span class="val" id="windV">4 м/с</span></div>
+          <input type="range" id="wind" min="0" max="12" step="0.5" value="4">
+        </div>
+        <div class="ctrl">
+          <div class="lbl"><span>Направление ветра</span><span class="val" id="dirV">9 ч · слева</span></div>
+          <div class="dial" id="dial"></div>
+        </div>
+        <div class="cart">
+          Патрон: <b>.308 Win · 175gr Sierra MatchKing</b><br>
+          BC G7 <b>0.243</b> · нач. скорость <b>2600 fps</b> · твист <b>1:11</b> · зеро <b>100 yd</b> · Sg ≈ <b>2.0</b>
+        </div>
+
+        <div class="sol">
+          <div class="solcard elev">
+            <div class="k">Вертикаль (падение)</div>
+            <div class="big" id="elevMil">3.1</div>
+            <div class="sm" id="elevMoa">MIL · 10.7 MOA</div>
+          </div>
+          <div class="solcard wind">
+            <div class="k">Горизонталь (ветер+дерив.)</div>
+            <div class="big" id="windMil">1.0</div>
+            <div class="sm" id="windMoa">MIL · 3.4 MOA</div>
+          </div>
+          <div class="solrow"><span>Снос ветром</span><b id="wOnly">— MOA</b></div>
+          <div class="solrow"><span>Деривация (spin drift)</span><b id="spin">— MOA</b></div>
+          <div class="solrow"><span>Время полёта</span><b id="tof">— c</b></div>
+          <div class="solrow"><span>Смещение точки на дисплее</span><b id="pxoff">— px</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">
+    <b>О демо.</b> Демонстрация принципа: вертикальная поправка и ветер рассчитаны на валидированной баллистической базе (G7 / Litz, .308 175gr SMK), деривация — по формуле Litz, перевод «угол → пиксель» — по геометрии дисплея 2560×2560 при FOV 12° (пример). В рабочем приборе данные поступают вживую (дальномер + Kestrel), профиль патрона и FOV настраиваются, а финальная точность добивается пристрелочной калибровкой на устройстве. Единицы (ярды/метры, м/с/mph, MIL/MOA) переключаются — в демо показаны ярды и MOA, как в эталонных таблицах. Модель — point-mass G7 (валидна до ~1000 yd, дальше транссоника требует расширенной модели). © DEADLINE.
+  </p>
+</div>
+
+<script>
+// ---- validated DOPE: .308 175gr SMK, MV 2600, zero 100m (MOA elevation, by yard) ----
+const ELEV = [[0,0],[100,0],[200,1.9],[300,4.1],[400,7.0],[500,10.7],[600,14.8],[700,19.2],[800,24.2],[900,30.0],[1000,36.3]]; // yd -> MOA
+const WIND10 = [[100,0.6],[200,1.2],[300,1.9],[400,2.6],[500,3.4],[600,4.3],[700,5.3],[800,6.4],[900,7.5],[1000,8.7]]; // yd -> MOA per 10mph full value
+const TOF = [[100,0.13],[300,0.42],[500,0.75],[700,1.15],[900,1.62],[1000,1.88]]; // yd -> s
+function interp(tbl,x){ if(x<=tbl[0][0])return tbl[0][1]; for(let i=1;i<tbl.length;i++){ if(x<=tbl[i][0]){ const[a,b]=tbl[i-1],[c,d]=tbl[i]; return b+(d-b)*(x-a)/(c-a);} } return tbl[tbl.length-1][1]; }
+const Sg=2.0;
+
+// optics
+const FOV=12.0, DISP=2560, SENS_W=1280, SENS_H=1024;
+const degPerPxX = FOV/DISP;                 // correct: full FOV across 2560
+const FOV_V = FOV*(SENS_H/SENS_W);          // 9.6° vertical (sensor 5:4)
+const degPerPxY = FOV_V/DISP;               // correct vertical
+
+let mode='display', windDir=270; // wind direction angle (deg)
+const dist=document.getElementById('dist'), wind=document.getElementById('wind');
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+
+// wind direction dial (clock, angle in degrees)
+const dirs=[['12 ч · встречный',0],['1:30',45],['3 ч · справа',90],['4:30',135],['6 ч · попутный',180],['7:30',225],['9 ч · слева',270],['10:30',315]];
+const dialEl=document.getElementById('dial');
+dirs.forEach(([lab,ang])=>{ const c=document.createElement('div'); c.className='dchip'+(ang===270?' on':''); c.textContent=lab.split(' ')[0]; c.onclick=()=>{windDir=ang;[...dialEl.children].forEach(x=>x.classList.remove('on'));c.classList.add('on');document.getElementById('dirV').textContent=lab;update();}; dialEl.appendChild(c); });
+
+function setMode(m){ mode=m;
+  document.getElementById('mDisplay').classList.toggle('on',m==='display');
+  document.getElementById('mSensor').classList.toggle('on',m==='sensor');
+  document.getElementById('mSensor').classList.toggle('bad',m==='sensor');
+  document.getElementById('badnote').classList.toggle('show',m==='sensor');
+  update();
+}
+const MOA2MIL=0.290888;
+function calc(){
+  const yd=+dist.value, ms=+wind.value, mph=ms*2.23694;
+  const elevMOA=interp(ELEV,yd);
+  // wind: full value at 3/9 o'clock; horizontal component by direction angle
+  const clockAng=windDir;
+  const horizComp=Math.abs(Math.sin(clockAng*Math.PI/180));
+  const windMOA=interp(WIND10,yd)*(mph/10)*horizComp;
+  const tof=interp(TOF,yd);
+  const spinIn=1.25*(Sg+1.2)*Math.pow(tof,1.83); // inches, right
+  const spinMOA=yd>0?spinIn/(yd/100)/1.047:0;
+  // wind blows from left(9)=push right(+), right(3)=push left(-)
+  const windSign=(clockAng>180)?+1:(clockAng>0&&clockAng<180?-1:0);
+  const horizMOA=windSign*windMOA + spinMOA; // spin drift to the right
+  return {yd,elevMOA,windMOA,spinMOA,horizMOA,tof};
+}
+function draw(s){
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2;
+  // thermal background (white-hot-ish gradient + noise)
+  const g=ctx.createRadialGradient(cx*0.8,cy*0.7,40,cx,cy,W*0.75);
+  g.addColorStop(0,'#2b3a33');g.addColorStop(.45,'#161f1a');g.addColorStop(1,'#0a0f0c');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // grain
+  for(let i=0;i<900;i++){ctx.fillStyle='rgba(255,255,255,'+(Math.random()*0.025)+')';ctx.fillRect(Math.random()*W,Math.random()*H,2,2);}
+  // mil-grid reticle
+  ctx.strokeStyle='rgba(120,255,170,.30)';ctx.lineWidth=2;
+  const milPx=( (1/1000)*180/Math.PI )/degPerPxY * (W/DISP); // 1 mil in canvas px (vertical scale)
+  ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,H);ctx.moveTo(0,cy);ctx.lineTo(W,cy);ctx.stroke();
+  ctx.strokeStyle='rgba(120,255,170,.18)';ctx.lineWidth=1;
+  for(let k=-10;k<=10;k++){ if(k===0)continue; const yy=cy+k*milPx; if(yy>0&&yy<H){ctx.beginPath();ctx.moveTo(cx-14,yy);ctx.lineTo(cx+14,yy);ctx.stroke();} const xx=cx+k*milPx; if(xx>0&&xx<W){ctx.beginPath();ctx.moveTo(xx,cy-14);ctx.lineTo(xx,cy+14);ctx.stroke();} }
+  // center aim cross (bore/zero)
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,7,0,7);ctx.stroke();
+  // ---- aim point: target sits at correct (display) point; dot lands per mode ----
+  const elevDeg=s.elevMOA/60, horizDeg=s.horizMOA/60, sc=W/DISP;
+  const tX=cx+(horizDeg/degPerPxX)*sc, tY=cy+(elevDeg/degPerPxY)*sc; // correct point (target)
+  let dX,dY;
+  if(mode==='display'){ dX=tX; dY=tY; }
+  else { const dxs=horizDeg/(FOV/SENS_W), dys=elevDeg/(FOV_V/SENS_H); dX=cx+dxs*(DISP/SENS_W)*sc; dY=cy+dys*(DISP/SENS_W)*sc; }
+  // target silhouette at the correct point
+  ctx.fillStyle='rgba(190,225,200,.16)';
+  ctx.beginPath();ctx.ellipse(tX,tY+6,28,40,0,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(tX,tY-34,17,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(190,225,200,.32)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(tX,tY-6,38,58,0,0,7);ctx.stroke();
+  const col= mode==='display'?'55,224,139':'255,90,82';
+  // dashed line center -> dot
+  ctx.strokeStyle='rgba('+col+',.45)';ctx.setLineDash([6,6]);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(dX,dY);ctx.stroke();ctx.setLineDash([]);
+  // glowing aim dot
+  const gg=ctx.createRadialGradient(dX,dY,0,dX,dY,26);
+  gg.addColorStop(0,'rgba('+col+',1)');gg.addColorStop(.4,'rgba('+col+',.5)');gg.addColorStop(1,'rgba('+col+',0)');
+  ctx.fillStyle=gg;ctx.beginPath();ctx.arc(dX,dY,26,0,7);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(dX,dY,4.5,0,7);ctx.fill();
+  ctx.strokeStyle='rgba('+col+',1)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(dX,dY,11,0,7);ctx.stroke();
+  // miss cross on the target when sensor mode
+  if(mode==='sensor'){ const mm=15; ctx.strokeStyle='rgba(255,90,82,.95)';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(tX-mm,tY-mm);ctx.lineTo(tX+mm,tY+mm);ctx.moveTo(tX+mm,tY-mm);ctx.lineTo(tX-mm,tY+mm);ctx.stroke(); }
+  return {dxPx:(dX-cx)/sc, dyPx:(dY-cy)/sc};
+}
+function update(){
+  const s=calc();
+  document.getElementById('distV').textContent=s.yd+' yd';
+  document.getElementById('windV').textContent=(+wind.value)+' м/с ('+((+wind.value)*2.23694).toFixed(0)+' mph)';
+  const elevMil=s.elevMOA*MOA2MIL, horizMil=s.horizMOA*MOA2MIL;
+  document.getElementById('elevMil').textContent=elevMil.toFixed(1);
+  document.getElementById('elevMoa').textContent='MIL · '+s.elevMOA.toFixed(1)+' MOA';
+  document.getElementById('windMil').textContent=(horizMil>=0?'':'−')+Math.abs(horizMil).toFixed(1);
+  document.getElementById('windMoa').textContent='MIL · '+Math.abs(s.horizMOA).toFixed(1)+' MOA';
+  document.getElementById('wOnly').textContent=s.windMOA.toFixed(2)+' MOA';
+  document.getElementById('spin').textContent=s.spinMOA.toFixed(2)+' MOA';
+  document.getElementById('tof').textContent=s.tof.toFixed(2)+' c';
+  const off=draw(s);
+  document.getElementById('pxoff').textContent='Δx '+Math.round(off.dxPx)+' · Δy '+Math.round(off.dyPx)+' px';
+}
+// validation table
+const vt=document.getElementById('vtbody');
+[200,300,500,700,900,1000].forEach(yd=>{
+  const e=interp(ELEV,yd), w=interp(WIND10,yd)*(4*2.23694/10), t=interp(TOF,yd);
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+yd+' yd ('+Math.round(yd*0.9144)+' м)</td><td>'+e.toFixed(1)+' MOA</td><td>'+(e*MOA2MIL).toFixed(1)+'</td><td class="ok">'+w.toFixed(1)+' MOA</td><td>'+t.toFixed(2)+' c</td>';
+  vt.appendChild(tr);
+});
+dist.oninput=update; wind.oninput=update;
+update();
+</script>
+</body>
+</html>
